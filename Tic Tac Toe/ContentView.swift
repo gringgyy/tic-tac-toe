@@ -12,51 +12,63 @@ struct ContentView: View {
     //@State private var isHumanTurn = true
     @State private var isGameboardDisable = false
     @State private var alertItem: AlertItem?
+    @State private var humanTurn = true
+    @State private var startTurn = true
     
     var body: some View {
         NavigationView {
-            LazyVGrid(columns: [GridItem(), GridItem(), GridItem()]){
-                ForEach(0..<9) { i in
-                    ZStack {
-                        Color.red
-                            .opacity(0.5)
-                            .frame(width: squareSize(), height: squareSize())
-                            .cornerRadius(15)
-                        Image(systemName: moves[i]?.mark ?? "xmark.circle")
-                            .resizable()
-                            .frame(width: markSize(), height: markSize())
-                            .foregroundColor(.white)
-                            .opacity(moves[i] == nil ? 0 : 1)
-                    }
-                    .onTapGesture {
-                        if isSquareOccupied(in: moves, forIndex: i) { return }
-                        
-                        moves[i] = Move(player: .human, boardIndex: i)
-                        
-                        if checkWinCondition(for: .human, in: moves) {
-                            alertItem = AlertContext.humanWin
-                            return
+            VStack {
+                if humanTurn {
+                    Text("Your Turn").font(.largeTitle)
+                }
+                else {
+                    Text("Computer Turn").font(.largeTitle)
+                }
+                LazyVGrid(columns: [GridItem(), GridItem(), GridItem()]){
+                    ForEach(0..<9) { i in
+                        ZStack {
+                            Color.blue
+                                .opacity(0.7)
+                                .frame(width: squareSize(), height: squareSize())
+                                .cornerRadius(15)
+                            Image(systemName: moves[i]?.mark ?? "xmark.circle")
+                                .resizable()
+                                .frame(width: markSize(), height: markSize())
+                                .foregroundColor(.black)
+                                .opacity(moves[i] == nil ? 0 : 1)
                         }
-                        
-                        if checkforDraw(in: moves) {
-                            alertItem = AlertContext.draw
-                            return
-                        }
-                        
-                        isGameboardDisable.toggle()
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            let computerPosition = determineComputerMove(in: moves)
-                            moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
-                            //isHumanTurn.toggle()
+                        .onTapGesture {
+                            if isSquareOccupied(in: moves, forIndex: i) { return }
+                            
+                            moves[i] = Move(player: .human, boardIndex: i)
+                            
+                            if checkWinCondition(for: .human, in: moves) {
+                                alertItem = AlertContext.humanWin
+                                return
+                            }
+                            
+                            if checkforDraw(in: moves) {
+                                alertItem = AlertContext.draw
+                                return
+                            }
                             
                             isGameboardDisable.toggle()
+                            humanTurn.toggle()
                             
-                            if checkWinCondition(for: .computer, in: moves) {
-                                alertItem = AlertContext.computerWin
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                                let computerPosition = determineComputerMove(in: moves)
+                                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                                //isHumanTurn.toggle()
+                                
+                                isGameboardDisable.toggle()
+                                humanTurn.toggle()
+                                
+                                if checkWinCondition(for: .computer, in: moves) {
+                                    alertItem = AlertContext.computerWin
+                                }
                             }
+                            
                         }
-                        
                     }
                 }
             }
@@ -71,6 +83,30 @@ struct ContentView: View {
     
     func resetGame() {
         moves = Array(repeating: nil, count: 9)
+        startTurn.toggle()
+        if startTurn {
+            humanTurn = true
+        }else {
+            humanTurn = false
+            isGameboardDisable.toggle()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let computerPosition = determineComputerMove(in: moves)
+                moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
+                //isHumanTurn.toggle()
+                
+                isGameboardDisable.toggle()
+                humanTurn.toggle()
+                
+                if checkWinCondition(for: .computer, in: moves) {
+                    alertItem = AlertContext.computerWin
+                }
+            }
+        }
+        //humanTurn.toggle()
+    }
+    
+    func startGame() {
+        
     }
     
     func checkWinCondition(for player: Player, in moves: [Move?]) -> Bool {
